@@ -15,12 +15,15 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Routes
 import authRoutes from "./routes/authRoutes";
+import userRoutes from "./routes/userRoutes";
 import postRoutes from "./routes/postRoutes";
 import categoryRoutes from "./routes/categoryRoutes";
+import { isAuthenticated } from "./middlewares/authMiddleware";
 
 app.use("/api/auth", authRoutes);
-app.use("/api/posts", postRoutes);
-app.use("/api/categories", categoryRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/posts", isAuthenticated, postRoutes);
+app.use("/api/categories", isAuthenticated, categoryRoutes);
 
 // Error Handlers
 app.use(notFound);

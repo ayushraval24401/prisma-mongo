@@ -10,6 +10,7 @@ export const customError = (
 ) => {
   const error = new CustomError(err.status, err.message, err.additionalInfo);
   return res.status(error.status).json({
+    error: err,
     message: error.message,
     successCode: error.status,
   });

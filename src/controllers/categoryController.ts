@@ -3,13 +3,14 @@ import { categoryValidator } from "../helper/validator";
 import { PrismaClient } from "@prisma/client";
 import { DefaultResponse } from "../helper/responseHelper";
 import { CustomError } from "../types/CustomError";
+import categoryServices from "../services/categoryServices";
 
 const prisma = new PrismaClient();
 
 class CategoryController {
   async getAllCategories(req: Request, res: Response, next: NextFunction) {
     try {
-      const categories = await prisma.category.findMany();
+      const { categories } = await categoryServices.getAllcategoriesService();
 
       return DefaultResponse(
         res,
@@ -26,9 +27,7 @@ class CategoryController {
     try {
       const id = req.params.id;
 
-      const category = await prisma.category.findUnique({
-        where: { id: id },
-      });
+      const { category } = await categoryServices.getCategoryDetailsService(id);
 
       return DefaultResponse(
         res,
@@ -51,9 +50,10 @@ class CategoryController {
         const err: CustomError = new CustomError(403, error.error?.message);
         return next(err);
       }
-      const category = await prisma.category.create({
-        data: req.body,
-      });
+
+      const { category } = await categoryServices.createCategoryService(
+        req.body.name
+      );
 
       return DefaultResponse(
         res,
@@ -70,10 +70,10 @@ class CategoryController {
     try {
       const id = req.params.id;
 
-      const updatedCategory = await prisma.category.update({
-        where: { id: id },
-        data: req.body,
-      });
+      const { updatedCategory } = await categoryServices.editCategoryService(
+        id,
+        req.body.name
+      );
 
       return DefaultResponse(
         res,
@@ -89,9 +89,9 @@ class CategoryController {
   async deleteCategory(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id;
-      const deletedCategory = await prisma.category.delete({
-        where: { id: id },
-      });
+
+      await categoryServices.deleteCategoryService(id);
+
       return DefaultResponse(res, 200, "Category deleted successfully");
     } catch (err) {
       next(err);

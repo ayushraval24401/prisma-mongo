@@ -1,12 +1,11 @@
 import express from "express";
 import categoryController from "../controllers/categoryController";
-import { isAuthenticated } from "../middlewares/authMiddleware";
 const router = express.Router();
 
-router.get("/", isAuthenticated, categoryController.getAllCategories);
-router.get("/:id", isAuthenticated, categoryController.getCategoryDetails);
-router.post("/", isAuthenticated, categoryController.createCategory);
-router.put("/:id", isAuthenticated, categoryController.editCategory);
-router.delete("/:id", isAuthenticated, categoryController.deleteCategory);
+router.get("/", categoryController.getAllCategories);
+router.get("/:id", categoryController.getCategoryDetails);
+router.post("/", categoryController.createCategory);
+router.put("/:id", categoryController.editCategory);
+router.delete("/:id", categoryController.deleteCategory);
 
 export default router;
