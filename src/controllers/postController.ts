@@ -3,68 +3,26 @@ import { postValidator } from "../helper/validator";
 import { PrismaClient } from "@prisma/client";
 import { DefaultResponse } from "../helper/responseHelper";
 import { CustomError } from "../types/CustomError";
+import postServices from "../services/postServices";
 
 const prisma = new PrismaClient();
 
 class PostController {
   async getAllPosts(req: Request, res: Response, next: NextFunction) {
     try {
-      const search: any = req.query.search;
+      const search: string = req?.query?.search as string;
       const page: number = Number(req.query.page);
       const limit: number = Number(req.query.limit);
-      const column: any = req.query.column;
-      const sortType = req.query.sort;
+      const column: string = req.query.column as string;
+      const sortType: string = req.query.sort as string;
 
-      let posts;
-      let count;
-      let queryArgs: any = {
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-          body: true,
-          authorId: true,
-          // categoryIds: true,
-          categories: true,
-        },
-      };
-
-      if (column) {
-        queryArgs = {
-          ...queryArgs,
-          where: {
-            [column]: {
-              mode: "insensitive",
-              contains: search,
-            },
-          },
-          orderBy: {
-            [column]: sortType ?? "asc",
-          },
-        };
-        count = await prisma.post.count({
-          where: {
-            [column]: {
-              mode: "insensitive",
-              contains: search,
-            },
-          },
-        });
-      } else {
-        count = await prisma.post.count();
-      }
-
-      if (!page || !limit) {
-        posts = await prisma.post.findMany({
-          ...queryArgs,
-        });
-      } else {
-        posts = await prisma.post.findMany({
-          ...queryArgs,
-          skip: (page - 1) * limit,
-          take: limit,
-        });
-      }
+      const { posts, count } = await postServices.getAllPostsService(
+        search,
+        page,
+        limit,
+        column,
+        sortType
+      );
 
       return DefaultResponse(
         res,
@@ -83,11 +41,7 @@ class PostController {
     try {
       const id = req.params.id;
 
-      const post = await prisma.post.findUnique({
-        where: {
-          id: id,
-        },
-      });
+      const { post } = await postServices.getPostDetailsService(id);
 
       return DefaultResponse(
         res,
@@ -115,27 +69,13 @@ class PostController {
 
       const { slug, body, title, categories } = req.body;
 
-      const setData = categories
-        ? categories.map((item: any) => {
-            return {
-              id: item,
-            };
-          })
-        : [];
-
-      //   Create Post for logged in user
-      const post = await prisma.post.create({
-        data: {
-          slug: slug,
-          title: title,
-          body: body,
-          authorId: request.user,
-          categoryIds: categories || [],
-          categories: {
-            connect: setData,
-          },
-        },
-      });
+      const { post } = await postServices.addPostService(
+        slug,
+        title,
+        body,
+        categories,
+        request.user
+      );
 
       return DefaultResponse(res, 201, "Post created successfully", post);
     } catch (err) {
@@ -150,34 +90,18 @@ class PostController {
 
       const { authorId, author, ...data } = req.body;
 
-      const post = await prisma.post.findUnique({
-        where: { id: id },
-      });
+      const resData = await postServices.updatePostService(
+        id,
+        request.user,
+        data
+      );
 
-      //   Check If Post Is Created by Logged in User
-
-      if (post?.authorId === request.user) {
-        const setData = req.body.categoryIds.map((item: any) => {
-          return {
-            id: item,
-          };
-        });
-
-        const updatedPost = await prisma.post.update({
-          where: { id: id },
-          data: {
-            ...data,
-            categories: {
-              connect: setData,
-            },
-          },
-        });
-
+      if (resData) {
         return DefaultResponse(
           res,
           200,
           "Post updated successfully",
-          updatedPost
+          resData.updatedPost
         );
       } else {
         return DefaultResponse(
@@ -196,33 +120,8 @@ class PostController {
       const request: any = req;
       const id = req.params.id;
 
-      const post = await prisma.post.findUnique({
-        where: { id: id },
-        select: { authorId: true, categoryIds: true },
-      });
-
-      const setData = post?.categoryIds.map((item: any) => {
-        return {
-          id: item,
-        };
-      });
-
-      //   Check If Post Is Created by Logged in User
-
-      if (post?.authorId === request.user) {
-        const deleted = await prisma.$transaction([
-          prisma.post.update({
-            where: { id: id },
-            data: {
-              categories: {
-                disconnect: setData,
-              },
-            },
-          }),
-          prisma.post.delete({
-            where: { id: id },
-          }),
-        ]);
+      const resData = await postServices.deletePostService(id, request.user);
+      if (resData) {
         return DefaultResponse(res, 200, "Post deleted successfully");
       } else {
         return DefaultResponse(
@@ -239,72 +138,20 @@ class PostController {
   async getMyPosts(req: Request, res: Response, next: NextFunction) {
     try {
       const request: any = req;
-      const search: any = req.query.search;
+      const search: string = req.query.search as string;
       const page: number = Number(req.query.page);
       const limit: number = Number(req.query.limit);
-      const column: any = req.query.column;
-      const sortType = req.query.sort;
+      const column: string = req.query.column as string;
+      const sortType: string = req.query.sort as string;
 
-      let posts;
-      let count;
-      let queryArgs: any = {
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-          body: true,
-          authorId: true,
-        },
-      };
-
-      if (column) {
-        queryArgs = {
-          ...queryArgs,
-          where: {
-            [column]: {
-              mode: "insensitive",
-              contains: search,
-            },
-            authorId: request.user,
-          },
-          orderBy: {
-            [column]: sortType ?? "asc",
-          },
-        };
-        count = await prisma.post.count({
-          where: {
-            [column]: {
-              mode: "insensitive",
-              contains: search,
-              authorId: request.user,
-            },
-          },
-        });
-      } else {
-        queryArgs = {
-          ...queryArgs,
-          where: {
-            authorId: request.user,
-          },
-        };
-        count = await prisma.post.count({
-          where: {
-            authorId: request.user,
-          },
-        });
-      }
-
-      if (!page || !limit) {
-        posts = await prisma.post.findMany({
-          ...queryArgs,
-        });
-      } else {
-        posts = await prisma.post.findMany({
-          ...queryArgs,
-          skip: (page - 1) * limit,
-          take: limit,
-        });
-      }
+      const { posts, count } = await postServices.getMyPostService(
+        request.user,
+        search,
+        page,
+        limit,
+        column,
+        sortType
+      );
 
       return DefaultResponse(
         res,
@@ -323,14 +170,8 @@ class PostController {
     try {
       const id = req.params.id;
 
-      const posts = await prisma.category.findUnique({
-        where: {
-          id: id,
-        },
-        select: {
-          posts: true,
-        },
-      });
+      const { posts } = await postServices.getPostByCategory(id);
+
       return DefaultResponse(res, 200, "Posts fetched successfully", posts);
     } catch (err) {
       next(err);
