@@ -16,8 +16,10 @@ model Post{
   title String 
   body String
   authorId String @db.ObjectId
-  author User @relation(fields: [authorId], references: [id])
-  comments Comment[]
+  author User @relation(fields: [authorId], references: [id], onDelete:Cascade)
+  comments Comment[] 
+  categoryIds String[] @db.ObjectId
+  categories Category[]  @relation(fields: [categoryIds],references: [id])
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
@@ -41,6 +43,15 @@ model Comment{
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
+
+model Category{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  name String
+  // posts CategoriesOnPosts[]
+  postIds String[] @db.ObjectId
+  posts Post[] @relation(fields: [postIds],references: [id])
+}
+ 
 
 type Address{
   street String 

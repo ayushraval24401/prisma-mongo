@@ -227,7 +227,31 @@ class Authcontroller {
 
       // Find User By Id
 
-      const user = await prisma.user.delete({
+      // const postsData = await prisma.post.findMany({
+      //   where: { authorId: id },
+      //   select: { categoryIds: true },
+      // });
+
+      // let totalCats: any = [];
+      // postsData.forEach((post) => {
+      //   const final = post.categoryIds.map((item) => {
+      //     return { id: item };
+      //   });
+      //   totalCats = [...totalCats, ...final];
+      // });
+
+      // const updateQuery: any = {
+      //   categoryIds: {
+      //     disconnect: totalCats,
+      //   },
+      // };
+
+      // const deleteFromCategory = await prisma.post.updateMany({
+      //   where: { authorId: id },
+      //   data: updateQuery,
+      // });
+
+      const deleteUser = await prisma.user.delete({
         where: { id },
       });
 

@@ -3,6 +3,7 @@ import postController from "../controllers/postController";
 import { isAuthenticated } from "../middlewares/authMiddleware";
 const router = express.Router();
 
+router.get("/category/:id", isAuthenticated, postController.getPostsByCategory);
 router.get("/my", isAuthenticated, postController.getMyPosts);
 router.get("/", isAuthenticated, postController.getAllPosts);
 router.get("/:id", isAuthenticated, postController.getPostDetails);

@@ -16,4 +16,9 @@ export const postValidator = Joi.object({
   slug: Joi.string().required(),
   title: Joi.string().required(),
   body: Joi.string().required(),
+  categories: Joi.array(),
+});
+
+export const categoryValidator = Joi.object({
+  name: Joi.string().required(),
 });

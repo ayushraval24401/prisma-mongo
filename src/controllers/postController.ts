@@ -24,6 +24,8 @@ class PostController {
           title: true,
           body: true,
           authorId: true,
+          // categoryIds: true,
+          categories: true,
         },
       };
 
@@ -111,7 +113,15 @@ class PostController {
 
       const request: any = req;
 
-      const { slug, body, title } = req.body;
+      const { slug, body, title, categories } = req.body;
+
+      const setData = categories
+        ? categories.map((item: any) => {
+            return {
+              id: item,
+            };
+          })
+        : [];
 
       //   Create Post for logged in user
       const post = await prisma.post.create({
@@ -120,6 +130,10 @@ class PostController {
           title: title,
           body: body,
           authorId: request.user,
+          categoryIds: categories || [],
+          categories: {
+            connect: setData,
+          },
         },
       });
 
@@ -143,9 +157,20 @@ class PostController {
       //   Check If Post Is Created by Logged in User
 
       if (post?.authorId === request.user) {
+        const setData = req.body.categoryIds.map((item: any) => {
+          return {
+            id: item,
+          };
+        });
+
         const updatedPost = await prisma.post.update({
           where: { id: id },
-          data: data,
+          data: {
+            ...data,
+            categories: {
+              connect: setData,
+            },
+          },
         });
 
         return DefaultResponse(
@@ -173,13 +198,31 @@ class PostController {
 
       const post = await prisma.post.findUnique({
         where: { id: id },
+        select: { authorId: true, categoryIds: true },
+      });
+
+      const setData = post?.categoryIds.map((item: any) => {
+        return {
+          id: item,
+        };
       });
 
       //   Check If Post Is Created by Logged in User
+
       if (post?.authorId === request.user) {
-        const post = await prisma.post.delete({
-          where: { id: id },
-        });
+        const deleted = await prisma.$transaction([
+          prisma.post.update({
+            where: { id: id },
+            data: {
+              categories: {
+                disconnect: setData,
+              },
+            },
+          }),
+          prisma.post.delete({
+            where: { id: id },
+          }),
+        ]);
         return DefaultResponse(res, 200, "Post deleted successfully");
       } else {
         return DefaultResponse(
@@ -271,6 +314,24 @@ class PostController {
         count,
         page
       );
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getPostsByCategory(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id;
+
+      const posts = await prisma.category.findUnique({
+        where: {
+          id: id,
+        },
+        select: {
+          posts: true,
+        },
+      });
+      return DefaultResponse(res, 200, "Posts fetched successfully", posts);
     } catch (err) {
       next(err);
     }

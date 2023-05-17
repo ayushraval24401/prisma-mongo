@@ -16,9 +16,11 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Routes
 import authRoutes from "./routes/authRoutes";
 import postRoutes from "./routes/postRoutes";
+import categoryRoutes from "./routes/categoryRoutes";
 
 app.use("/api/auth", authRoutes);
 app.use("/api/posts", postRoutes);
+app.use("/api/categories", categoryRoutes);
 
 // Error Handlers
 app.use(notFound);
