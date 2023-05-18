@@ -15,6 +15,8 @@ model Post{
   slug String @unique
   title String 
   body String
+  image String? 
+  stored_at Stored_at? @default(SERVER)
   authorId String @db.ObjectId
   author User @relation(fields: [authorId], references: [id], onDelete:Cascade)
   comments Comment[] 
@@ -52,10 +54,14 @@ model Category{
   posts Post[] @relation(fields: [postIds],references: [id])
 }
  
-
 type Address{
   street String 
   city String 
   state String
   zip String 
+}
+
+enum Stored_at{
+  AZURE
+  SERVER  
 }
