@@ -1,4 +1,7 @@
 import { PrismaClient } from "@prisma/client";
+import { STORED_AT } from "../types/enum";
+
+const AZURE = process.env.AZURE_BLOB_STORAGE;
 
 const prisma = new PrismaClient();
 
@@ -18,6 +21,7 @@ class PostServices {
         slug: true,
         title: true,
         body: true,
+        image: true,
         authorId: true,
         categoryIds: true,
         // categories: true,
@@ -79,7 +83,8 @@ class PostServices {
     title: string,
     body: string,
     categories: [],
-    user: string
+    user: string,
+    image?: string
   ) {
     const setData = categories
       ? categories.map((item: any) => {
@@ -88,6 +93,8 @@ class PostServices {
           };
         })
       : [];
+
+    const stored_at = AZURE ? "AZURE" : "SERVER";
 
     //   Create Post for logged in user
     const post = await prisma.post.create({
@@ -100,6 +107,8 @@ class PostServices {
         categories: {
           connect: setData,
         },
+        image: image,
+        stored_at: stored_at,
       },
     });
 

@@ -4,8 +4,11 @@ import { PrismaClient } from "@prisma/client";
 import { DefaultResponse } from "../helper/responseHelper";
 import { CustomError } from "../types/CustomError";
 import postServices from "../services/postServices";
+import handleSingleUploadFile from "../helper/uploadHelper";
+import { UploadedFile } from "../types/UploadedFile";
+import blobUpload from "../services/azure/uploadFile";
 
-const prisma = new PrismaClient();
+const AZURE = process.env.AZURE_BLOB_STORAGE;
 
 class PostController {
   async getAllPosts(req: Request, res: Response, next: NextFunction) {
@@ -56,6 +59,25 @@ class PostController {
 
   async createPost(req: Request, res: Response, next: NextFunction) {
     try {
+      const request: any = req;
+
+      let uploadResult;
+      if (AZURE) {
+        try {
+          uploadResult = await blobUpload(req, res, next);
+        } catch (err) {
+          next(err);
+        }
+      } else {
+        try {
+          uploadResult = await handleSingleUploadFile(req, res);
+        } catch (e) {
+          next(e);
+        }
+      }
+
+      const uploadedFile: UploadedFile = uploadResult.file || null;
+
       // Check validation
       const error = postValidator.validate(req.body);
 
@@ -65,8 +87,6 @@ class PostController {
         return next(err);
       }
 
-      const request: any = req;
-
       const { slug, body, title, categories } = req.body;
 
       const { post } = await postServices.addPostService(
@@ -74,7 +94,8 @@ class PostController {
         title,
         body,
         categories,
-        request.user
+        request.user,
+        uploadedFile.filename
       );
 
       return DefaultResponse(res, 201, "Post created successfully", post);
